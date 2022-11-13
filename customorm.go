@@ -14,18 +14,35 @@ import (
 
 /*
 
-TAG: customorm
+TAG: customsql
 PREFIX:
 	pkey: - primary key
 	fkey: - foreign key
 MAIN WORD:
 	- column name
 ENDING:
-	;uniq - unique value joining into combined uniq constraint
+	;unique - unique value joining into combined uniq constraint
 	;null - without NOT NULL constraint
 	;position - field for order position value
-	;default= -default value after = sign
+	;default= - default value after = sign
+	;check() - check constrain
 */
+
+const (
+	primaryKeyTag   = "pkey"
+	foreignKeyTag   = "fkey"
+	uniqueTag       = "unique"
+	nullTag         = "null"
+	positionTag     = "position"
+	defaultTag      = "default"
+	checkTag        = "check"
+	OperandEqual    = "="
+	OperandMore     = ">"
+	OperandLess     = "<"
+	OperandNotEqual = "<>"
+	OperandContains = "CONTAINS"
+	OperandIn       = "IN"
+)
 
 type Filters struct {
 	Fields map[string]FilterFields
@@ -462,7 +479,7 @@ func (c *CORM) GetDataByValue(s interface{}, filter Filters, asMap bool) (interf
 		if fName == "" {
 			continue
 		}
-		operand := "="
+		operand := OperandEqual
 		postOperand := ""
 		val := v.Value
 		if filter.Fields[fName].UseValue {
@@ -470,14 +487,16 @@ func (c *CORM) GetDataByValue(s interface{}, filter Filters, asMap bool) (interf
 		}
 
 		switch filter.Fields[fName].Operand {
-		case ">":
+		case OperandMore:
 			operand = filter.Fields[fName].Operand
-		case "<":
+		case OperandLess:
 			operand = filter.Fields[fName].Operand
-		case "CONTAINS":
+		case OperandNotEqual:
+			operand = filter.Fields[fName].Operand
+		case OperandContains:
 			operand = "LIKE '%' || "
 			postOperand = " || '%'"
-		case "IN":
+		case OperandIn:
 			operand = "= ANY("
 			postOperand = ")"
 			switch val.(type) {
@@ -526,7 +545,7 @@ func (c *CORM) GetDataByValue(s interface{}, filter Filters, asMap bool) (interf
 				val = filter.Fields[v.FieldName].Value
 			}
 			switch filter.Fields[v.FieldName].Operand {
-			case "IN":
+			case OperandIn:
 				operand = "= ANY("
 				postOperand = ")"
 				switch val.(type) {
@@ -693,12 +712,12 @@ func (table *Table) ImportTableData() {
 			tag = subConstrain[0]
 			for i := 1; i < len(subConstrain); i++ {
 				switch true {
-				case subConstrain[i] == "unique":
+				case subConstrain[i] == uniqueTag:
 					isUniq = true
-				case subConstrain[i] == "null":
+				case subConstrain[i] == nullTag:
 					isNull = true
 					ending = ""
-				case subConstrain[i] == "position":
+				case subConstrain[i] == positionTag:
 					isPosition = true
 				case len(strings.Split(subConstrain[i], "default=")) > 1:
 					defaultValue = "DEFAULT " + strings.Split(subConstrain[i], "default=")[1]
@@ -711,7 +730,7 @@ func (table *Table) ImportTableData() {
 		if len(subOption) > 1 {
 			tag = subOption[1]
 			switch subOption[0] {
-			case "fkey":
+			case foreignKeyTag:
 				var columnValue interface{}
 				fValue := reflect.Indirect(v.Field(i))
 				if fValue.IsValid() {
@@ -728,7 +747,7 @@ func (table *Table) ImportTableData() {
 				},
 				)
 				notNeed = true
-			case "pkey":
+			case primaryKeyTag:
 				ending += " PRIMARY KEY"
 				isSerial = true
 			}

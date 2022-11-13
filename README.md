@@ -1,5 +1,7 @@
 # customorm
-Not a real ORM, just a bunch of functions to generate and run SQL queries by specific structs. Functions receive and return interfaces and can panic.
+Not a real ORM, just a bunch of functions to generate and run SQL queries by specific structs.
+Functions receive and return interfaces and can panic.
+Focused to work with PostgreSQL.
 ### examples
 #### structs
 - fields Id is mandatory (with pkey tag)  
